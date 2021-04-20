@@ -1,33 +1,30 @@
 __path = process.cwd()
 var favicon = require('serve-favicon');
 var express = require('express');
-var image2base64 = require('image-to-base64');
 var db = require(__path + '/database/db');
 try {
 var zahirr = db.get("zahirr");
 } catch (e) {
-	console.log('')
+	console.log('')  
 }
-
+ 
 var creatorList = ['@only_fxc7'];
-var creator = creatorList[Math.floor(Math.random() * creatorList.length)];
-
-var ytdl = require('ytdl-core');
-var ytpl = require('ytpl');
+var creator = creatorList[Math.floor(Math.random() * creatorList.length)]; 
 var secure = require('ssl-express-www');
 var cors = require('cors');
 var fetch = require('node-fetch');
 var cheerio = require('cheerio');
 var request = require('request');
+var zrapi = require("zrapi");
 var fs = require('fs');
 var TikTokScraper = require('tiktok-scraper');
+var { EmojiAPI } = require("emoji-api");
+var emoji = new EmojiAPI();
 var router  = express.Router();
 var { color, bgcolor } = require(__path + '/lib/color.js');
 var { fetchJson } = require(__path + '/lib/fetcher.js');
 var options = require(__path + '/lib/options.js');
 var {
-	Vokal,
-	Base,
 	Searchnabi,
 	Gempa
 } = require('./../lib');
@@ -53,10 +50,26 @@ var {
 } = require("./../lib/utils/ig");
 
 var {
-  ytDonlod,
-  ytPlay,
+  ytDonlodMp3,
+  ytDonlodMp4,
+  ytPlayMp3,
+  ytPlayMp4,
   ytSearch
 } = require("./../lib/utils/yt");
+
+var { 
+  Joox, FB, Tiktok
+} = require("./../lib/utils/downloader");
+
+var {
+  Cuaca, Lirik
+} = require('./../lib/utils/information');
+
+var {
+  Base, WPUser
+} = require('./../lib/utils/tools');
+
+var tebakGambar = require('./../lib/utils/tebakGambar');
 
 var cookie = "HSID=A7EDzLn3kae2B1Njb;SSID=AheuwUjMojTWvA5GN;APISID=cgfXh13rQbb4zbLP/AlvlPJ2xBJBsykmS_;SAPISID=m82rJG4AC9nxQ5uG/A1FotfA_gi9pvo91C;__Secure-3PAPISID=m82rJG4AC9nxQ5uG/A1FotfA_gi9pvo91C;VISITOR_INFO1_LIVE=RgZLnZtCoPU;LOGIN_INFO=AFmmF2swRQIhAOXIXsKVou2azuz-kTsCKpbM9szRExAMUD-OwHYiuB6eAiAyPm4Ag3O9rbma7umBK-AG1zoGqyJinh4ia03csp5Nkw:QUQ3MjNmeXJ0UHFRS3dzaTNGRmlWR2FfMDRxa2NRYTFiN3lfTEdOVTc4QUlwbUI4S2dlVngxSG10N3ZqcHZwTHBKano5SkN2dDlPSkhRMUtReE42TkhYeUVWS3kyUE1jY2I1QzA1MDZBaktwd1llWU9lOWE4NWhoZV92aDkxeE9vMTNlcG1uMU9rYjhOaDZWdno2ZzN3TXl5TVNhSjNBRnJaMExrQXpoa2xzRVUteFNWZDI5S0Fn;PREF=app=desktop&f4=4000000&al=id;SID=2wezCMTUkWN3YS1VmS_DXaEU84J0pZIQdemM8Zry-uzWm8y1njBpLTOpxSfN-EaYCRSiDg.;YSC=HCowA1fmvzo;__Secure-3PSID=2wezCMTUkWN3YS1VmS_DXaEU84J0pZIQdemM8Zry-uzWm8y1dajgWzlBh9TgKapGOwuXfA.;SIDCC=AJi4QfFK0ri9fSfMjMQ4tOJNp6vOb9emETXB_nf2S05mvr2jBlmeEvlSsQSzPMuJl_V0wcbL1r8;__Secure-3PSIDCC=AJi4QfGeWHx-c4uTpU1rXCciO1p0s2fJWU07KrkZhWyD1Tqi8LyR-kHuBwHY9mViVYu1fRh2PA";
 
@@ -191,45 +204,102 @@ router.delete("/apikey", (req, res) => {
  }
 });
 
-router.get('/download/yt', (req, res) => {
+router.get('/joox', async(req, res, next) => {
+  const query = req.query.query;
+  const apikey = req.query.apikey;
+  
+  if(!query) return res.json(loghandler.notquery)
+  if(!apikey) return res.json(loghandler.notparam)
+  
+  if(listkey.includes(apikey)){
+  Joox(query)
+  .then((result) => {
+  res.json(result)
+    res.json(result)
+  });
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+
+router.get('/download/ytmp3', (req, res) => {
   const url = req.query.url;
   const apikey = req.query.apikey;
   if(!url) return res.send(loghandler.noturl)
   if(!apikey) return res.send(loghandler.notparam)
   if(listkey.includes(apikey)){
-  ytDonlod(url)
-    .then((data) => {
-      res.send({
+  ytDonlodMp3(url)
+    .then((result) => {
+      res.json({
         status: true,
         code: 200,
         creator: `${creator}`,
-        data
+        result
       })
     })
     .catch((error) => {
-      res.send(error)
+      res.json(error)
     });
     } else {
-    	res.send(loghandler.invalidKey)
+    	res.json(loghandler.invalidKey)
     }
 });
 
+router.get('/download/ytmp4', (req, res) => {
+  const url = req.query.url;
+  const apikey = req.query.apikey;
 
-router.get("/yt/play", (req, res) => {
+  if(!url) return res.send(loghandler.noturl)
+  if(!apikey) return res.send(loghandler.notparam)
+  if(listkey.includes(apikey)){
+  ytDonlodMp4(url)
+    .then((result) => {
+      res.json({
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result
+      })
+    })
+    .catch((error) => {
+      res.json(error)
+    });
+    } else {
+    	res.json(loghandler.invalidKey)
+    }
+});
+
+router.get("/yt/playmp3", (req, res) => {
     const query = req.query.query;
     const apikey = req.query.apikey;
     
     if(!query) return res.send(loghandler.notquery)
     if(!apikey) return res.send(loghandler.notparam)
     if(listkey.includes(apikey)){
-    ytPlay(query)
-        .then((data) => {
-            res.send({
-              status: true,
-              code: 200,
-              creator: `${creator}`,
-              data
-            });
+    ytPlayMp3(query)
+        .then((result) => {
+            res.json(result);
+        })
+        .catch((error) => {
+            res.send(error);
+        });
+      } else {
+      res.send(loghandler.invalidKey)
+      }
+});
+
+router.get("/yt/playmp4", (req, res) => {
+
+    const query = req.query.query;
+
+    const apikey = req.query.apikey;
+    
+    if(!query) return res.send(loghandler.notquery)
+    if(!apikey) return res.send(loghandler.notparam)
+    if(listkey.includes(apikey)){
+    ytPlayMp4(query)
+        .then((result) => {
+            res.json(result);
         })
         .catch((error) => {
             res.send(error);
@@ -248,13 +318,8 @@ router.get('/yt/search', (req, res) => {
     if(!apikey) return res.send(loghandler.notparam)
     if(listkey.includes(apikey)){
     ytSearch(query)
-        .then((data) => {
-            res.send({
-              status: true,
-              code: 200,
-              creator: `${creator}`,
-              data
-            });
+        .then((result) => {
+            res.json(result)
         })
         .catch((error) => {
             res.send(error);
@@ -271,19 +336,10 @@ router.get('/download/tiktok', async (req, res, next) => {
 	if(!Apikey) return res.json(loghandler.notparam)
 	if(listkey.includes(Apikey)){
      if (!url) return res.json(loghandler.noturl)
-
-     TikTokScraper.getVideoMeta(url, options)
-         .then(vid => {
-             console.log(vid)
-             res.json({
-                 status: true,
-                 creator: `${creator}`,
-                 videoNoWm: vid
-             })
-         })
-         .catch(e => {
-             res.json(loghandler.invalidlink)
-         })
+     Tiktok(url)
+     .then((data) => {
+       res.json(data)
+     })
     } else {
 res.json(loghandler.invalidKey)
 }
@@ -311,6 +367,35 @@ router.get('/download/ig', (req, res, next) => {
     	res.send(loghandler.invalidKey)
     }
 });
+
+router.get('/download/fb', async (req, res, next) => {
+
+        var Apikey = req.query.apikey,
+            url = req.query.url
+            
+	if(!Apikey) return res.json(loghandler.notparam)
+	if(listkey.includes(Apikey)){
+    if (!url) return res.json({ status : false, creator : `${creator}`, message : "masukan parameter url"})
+
+       FB(url)
+       .then((data) => {
+         res.json({
+           status: true,
+           code: 200,
+           creator: `${creator}`,
+           title: data.title,
+           desc: data.deskripsi,
+           durasi: data.durasi,
+           thumb: data.thumbnail,
+           result: data.hd
+         })
+       });
+} else {
+res.json(loghandler.invalidKey)
+}
+
+})
+
 
 router.get('/stalk/tiktok', async (req, res, next) => {
     var Apikey = req.query.apikey,
@@ -537,9 +622,41 @@ router.get('/base', async (req, res, next) => {
 	} else {
 res.json(loghandler.invalidKey)
 }
-})
+});
 
-router.get('/infogempa', async (req, res, next) => {
+router.get('/tools/wpuser', async(req, res, next) => {
+  const link = req.query.url;
+  const apikey = req.query.apikey;
+  
+  if(!link) return res.json(loghandler.noturl)
+  if(!apikey) return res.json(loghandler.notparam)
+  
+  if(listkey.includes(apikey)) {
+    WPUser(link)
+    .then((data) => {
+      res.json(data)
+    })
+} else {
+  res.json(loghandler.invalidKey)
+};
+});
+
+router.get('/info/cuaca', async(req, res, next) => {
+  const apikey = req.query.apikey;
+  const kota = req.query.kota;
+  
+  if(!apikey) return res.json(loghandler.notparam)
+  if(!kota) return res.json({status: false, code: 406, message: 'masukkan parameter kota'})
+  if(listkey.includes(apikey)) {
+    Cuaca(kota)
+    .then((data) => {
+      res.json(data)
+    })
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+})
+router.get('/info/gempa', async (req, res, next) => {
 	        var Apikey = req.query.apikey
 
 		if (!Apikey) return res.json(loghandler.notparam)
@@ -620,31 +737,6 @@ router.get('/muslim/quran', async (req, res, next) => {
     if (!ayat) return res.json({ status : false, creator : `${creator}`, message : "masukan parameter ayat"})
 
        fetch(encodeURI(`https://alquran-apiii.vercel.app/surah/${surah}/${ayat}`))
-        .then(response => response.json())
-        .then(data => {
-        var result = data;
-             res.json({
-                 result
-             })
-         })
-         .catch(e => {
-         	res.json(loghandler.error)
-})
-} else {
-res.json(loghandler.invalidKey)
-}
-})
-
-
-router.get('/download/fb', async (req, res, next) => {
-        var Apikey = req.query.apikey,
-            url = req.query.url
-            
-	if(!Apikey) return res.json(loghandler.notparam)
-	if(listkey.includes(Apikey)){
-    if (!url) return res.json({ status : false, creator : `${creator}`, message : "masukan parameter url"})
-
-       fetch(encodeURI(`https://fb-api-zhirrr.vercel.app/?url=${url}`))
         .then(response => response.json())
         .then(data => {
         var result = data;
@@ -823,21 +915,12 @@ res.json(loghandler.invalidKey)
 
 router.get('/muslim/asmaulhusna', async (req, res, next) => {
         var Apikey = req.query.apikey
-            
+
 	if(!Apikey) return res.json(loghandler.notparam)
 	if(listkey.includes(Apikey)){
 
-       fetch(encodeURI(`https://raw.githubusercontent.com/Zhirrr/My-SQL-Results/main/data/dataAsmaulHusna.json`))
-        .then(response => response.json())
-        .then(data => {
-        var result = data;
-             res.json({
-                 result
-             })
-         })
-         .catch(e => {
-         	res.json(loghandler.error)
-})
+	asmaul = JSON.parse(fs.readFileSync(__path +'/data/AsmaulHusna.json'));
+	res.json(asmaul)
 } else {
 res.json(loghandler.invalidKey)
 }
@@ -1162,7 +1245,7 @@ res.json(loghandler.invalidKey)
 }
 })
 
-router.get('/wikipedia', async (req, res, next) => {
+router.get('/info/wikipedia', async (req, res, next) => {
         var Apikey = req.query.apikey,
             search = req.query.search
             
@@ -1187,7 +1270,7 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/drakorasia', async (req, res, next) => {
+router.get('/info/drakorasia', async (req, res, next) => {
         var Apikey = req.query.apikey,
             search = req.query.search
             
@@ -1261,32 +1344,29 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/liriklagu', async (req, res, next) => {
+router.get('/info/liriklagu', async (req, res, next) => {
         var Apikey = req.query.apikey,
-            lagu = req.query.lagu
+            lagu = req.query.query;
             
 	if(!Apikey) return res.json(loghandler.notparam)
 	if(listkey.includes(Apikey)){
-        if(!lagu) return res.json({ status : false, creator : `${creator}`, message : "masukan parameter kata"})
-
-       fetch(encodeURI(`https://python-api-zhirrr.herokuapp.com/api/lirik?search=${lagu}`))
-        .then(response => response.json())
-        .then(data => {
-        var result = data;
-             res.json({
-                 result
-             })
-         })
-         .catch(e => {
-         	res.json(loghandler.error)
-})
+        if(!lagu) return res.json(loghandler.notquery)
+        Lirik(lagu)
+        .then((lirik) => {
+          res.json({
+            status: true,
+            code: 200,
+            creator: `${creator}`,
+            result: lirik.data
+          })
+        });
 } else {
 res.json(loghandler.invalidKey)
 }
 })
 
 
-router.get('/chordlagu', async (req, res, next) => {
+router.get('/info/chordlagu', async (req, res, next) => {
         var Apikey = req.query.apikey,
             lagu = req.query.lagu
             
@@ -1311,7 +1391,7 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/kbbi', async (req, res, next) => {
+router.get('/info/kbbi', async (req, res, next) => {
         var Apikey = req.query.apikey,
             kata = req.query.kata
             
@@ -1336,7 +1416,7 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/random/covidindo', async (req, res, next) => {
+router.get('/info/covidindo', async (req, res, next) => {
         var Apikey = req.query.apikey
             
 	if(!Apikey) return res.json(loghandler.notparam)
@@ -1359,7 +1439,7 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/random/covidworld', async (req, res, next) => {
+router.get('/info/covidworld', async (req, res, next) => {
         var Apikey = req.query.apikey
             
 	if(!Apikey) return res.json(loghandler.notparam)
@@ -1404,7 +1484,7 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/kodepos', async (req, res, next) => {
+router.get('/info/kodepos', async (req, res, next) => {
         var Apikey = req.query.apikey,
 	    kota = req.query.kota
             
@@ -1413,30 +1493,6 @@ router.get('/kodepos', async (req, res, next) => {
 	if(!kota) return res.json({ status : false, creator : `${creator}`, message : "masukan parameter kota"})
 
        fetch(encodeURI(`https://kodepos-api-zhirrr.vercel.app/?q=${kota}`))
-        .then(response => response.json())
-        .then(data => {
-        var result = data;
-             res.json({
-                 result
-             })
-         })
-         .catch(e => {
-         	res.json(loghandler.error)
-})
-} else {
-res.json(loghandler.invalidKey)
-}
-})
-
-
-router.get('/cuaca', async (req, res, next) => {
-        var Apikey = req.query.apikey,
-	    kabupaten = req.query.kabupaten
-            
-	if(!Apikey) return res.json(loghandler.notparam)
-	if(listkey.includes(Apikey)){
-	if(!kabupaten) return res.json({ status : false, creator : `${creator}`, message : "masukan parameter kabupaten"})
-       fetch(encodeURI(`https://docs-api-zahirrr.herokuapp.com/api/cuaca?kabupaten=${kabupaten}`))
         .then(response => response.json())
         .then(data => {
         var result = data;
@@ -1500,8 +1556,42 @@ res.json(loghandler.invalidKey)
 }
 })
 
+router.get('/anime/loli', (req, res, next) => {
+    var apikey = req.query.apikey
+    if (!apikey) return res.json(loghandler.notparam)
+    if(listkey.includes(apikey)){
+    try {
+        var options = {
+            url: "http://results.dogpile.com/serp?qc=images&q= " + "Loli",
+            method: "GET",
+            headers: {
+                "Accept": "text/html",
+                "User-Agent": "Chrome"
+            }
+        }
+        request(options, function(error, response, responseBody) {
+            if (error) return
 
-router.get('/manga', async (req, res, next) => {
+            $ = cheerio.load(responseBody)
+            var links = $(".image a.link")
+            var cari = new Array(links.length).fill(0).map((v, i) => links.eq(i).attr("href"))
+            if (!cari.length) return
+            var hasil = cari[Math.floor(Math.random() * cari.length)]
+            res.json({
+              status: true,
+              code: 200,
+              creator: `${creator}`,
+              result: hasil
+            })
+          })
+    } catch (e) {}
+    } else {
+      res.json(loghandler.invalidKey)
+    }
+});
+
+
+router.get('/anime/manga', async (req, res, next) => {
         var Apikey = req.query.apikey,
 	    search = req.query.search
             
@@ -1546,24 +1636,31 @@ res.json(loghandler.invalidKey)
 })
 
 
-router.get('/kuis/tebakgambar', async (req, res, next) => {
-        var Apikey = req.query.apikey
-	if(!Apikey) return res.json(loghandler.notparam)
-	if(listkey.includes(Apikey)){
-       fetch(encodeURI(`https://docs-api-zahirrr.herokuapp.com/api/quote?type=tebakgambar`))
-        .then(response => response.json())
-        .then(data => {
-        var result = data;
-             res.json({
-                 result
-             })
-         })
-         .catch(e => {
-         	res.json(loghandler.error)
-})
-} else {
-res.json(loghandler.invalidKey)
-}
+router.get('/kuis/tebakGambar', async (req, res, next) => {
+  var apikey = req.query.apikey;
+  
+  if(!apikey) return res.json(loghandler.notparam)
+  if(listkey.includes(apikey)){
+  let result = await tebakGambar()
+  if (result) {
+    const hasil = {
+      status: true,
+      code: 200,
+      creator: `${creator}`,
+      image: result.img,
+      jawaban: result.jawaban,
+      clue: result.petunjuk
+    }
+    res.json(hasil)
+  } else {
+    return res.status(408).json({
+      status: res.statusCode,
+      error: 'Emror'
+    })
+  }
+  } else {
+  res.json(loghandler.invalidKey)
+  }
 })
 
 /**
@@ -1580,11 +1677,13 @@ router.get("/photooxy/shadow", (req, res) => {
   if(listkey.includes(apikey)){
   pShadow(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1602,11 +1701,13 @@ router.get("/photooxy/romantic", (req, res) => {
   if(listkey.includes(apikey)){
   pRomantic(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1626,11 +1727,13 @@ router.get("/photooxy/smoke", (req, res) => {
   if(listkey.includes(apikey)){
   pSmoke(text1)
     .then((data) => {
-    res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1648,11 +1751,13 @@ router.get("/photooxy/burn-papper", (req, res) => {
   if(listkey.includes(apikey)){
   pBurnPapper(text1)
     .then((data) => {
-     res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1670,11 +1775,13 @@ router.get("/photooxy/naruto", (req, res) => {
   if(listkey.includes(apikey)){
   pNaruto(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1692,11 +1799,13 @@ router.get("/photooxy/love-message", (req, res) => {
   if(listkey.includes(apikey)){
   pLoveMsg(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1714,11 +1823,13 @@ router.get("/photooxy/message-under-grass", (req, res) => {
   if(listkey.includes(apikey)){
   pMsgGrass(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1738,11 +1849,13 @@ router.get("/photooxy/glitch", (req, res) => {
   if(listkey.includes(apikey)){
   pGlitch(text1, text2)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1760,11 +1873,13 @@ router.get("/photooxy/double-heart", (req, res) => {
   if(listkey.includes(apikey)){
   pDoubleHeart(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1782,11 +1897,13 @@ router.get("/photooxy/coffe-cup", (req, res) => {
   if(listkey.includes(apikey)){
   pCoffeCup(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1795,6 +1912,7 @@ result: data
     	res.json(loghandler.invalidKey)
     }
 });
+
 router.get("/photooxy/love-text", (req, res) => {
   const text1 = req.query.text;
   const apikey = req.query.apikey;
@@ -1803,11 +1921,13 @@ router.get("/photooxy/love-text", (req, res) => {
   if(listkey.includes(apikey)){
   pLoveText(text1)
     .then((data) => {
-      res.json({
-status: true,
-code: 200,
-result: data
-})
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
     })
     .catch((error) => {
       res.json(error)
@@ -1816,6 +1936,7 @@ result: data
     	res.json(loghandler.invalidKey)
     }
 });
+
 router.get("/photooxy/butterfly", (req, res, next) => {
   const text1 = req.query.text;
   const apikey = req.query.apikey;
@@ -1824,17 +1945,115 @@ router.get("/photooxy/butterfly", (req, res, next) => {
   if(listkey.includes(apikey)){
   pButterfly(text1)
   .then((data) => {
-    res.json( 
-      data 
-    )
-  })
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: data.url
+      }
+      res.json(result)
+    })
+    .catch((error) => {
+      res.json(loghandler.error)
+    })
     } else {
     	res.json(loghandler.invalidKey)
     }
 });
 
-router.get('/maker/dadu', async (req, res, next) => {
+/*
+@ AKHIR PHOTOOXY
+*/
+/*
+@ TEXTPROME
+*/
+router.get('/textpro/black-pink', async(req, res, next) => {
+  const apikey = req.query.apikey;
+  const text = req.query.text;
+  
+  if(!apikey) return res.json(loghandler.notparam)
+  if(!text) return res.json(loghandler.nottext)
+  
+  if(listkey.includes(apikey)){
+    zrapi 
+  .textpro("https://textpro.me/create-blackpink-logo-style-online-1001.html", [
+    text,
+  ])
+  .then((data) => {
+    res.json({
+      status: true,
+      code: 200,
+      creator: `${creator}`,
+      result: data
+    })
+  })
+  .catch((err) => console.log(err));
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
 
+router.get('/textpro/3d-gradient', async(req, res, next) => {
+  const apikey = req.query.apikey;
+  const text = req.query.text;
+  
+  if(!apikey) return res.json(loghandler.notparam)
+  if(!text) return res.json(loghandler.nottext)
+  
+  if(listkey.includes(apikey)){
+    zrapi 
+  .textpro("https://textpro.me/3d-gradient-text-effect-online-free-1002.html", [
+    text,
+  ])
+  .then((data) => {
+    res.json({
+      status: true,
+      code: 200,
+      creator: `${creator}`,
+      result: data
+    })
+  })
+  .catch((err) => console.log(err));
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+
+router.get('/textpro/porn-hub', async(req, res, next) => {
+
+  const apikey = req.query.apikey;
+
+  const text = req.query.text1;
+  const text2 = req.query.text2;
+  
+  if(!apikey) return res.json(loghandler.notparam)
+  if(!text) return res.json(loghandler.nottext1)
+  if(!text2) return res.json(loghandler.nottext2)
+  
+  if(listkey.includes(apikey)){
+    zrapi 
+  .textpro("https://textpro.me/pornhub-style-logo-online-generator-free-977.html", [
+    text, text2
+  ])
+  .then((data) => {
+    res.json({
+      status: true,
+      code: 200,
+      creator: `${creator}`,
+      result: data
+    })
+  })
+  .catch((err) => console.log(err));
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+
+/*
+@AKHIR TEXTPRO ME
+*/
+
+router.get('/maker/dadu', async (req, res, next) => {
   Apikey = req.query.apikey;
 
   if(!Apikey) return res.json(loghandler.notparam)
@@ -1842,55 +2061,47 @@ router.get('/maker/dadu', async (req, res, next) => {
       random = Math.floor(Math.random() * 6) + 1
       hasil = 'https://www.random.org/dice/dice' + random + '.png'
      data = await fetch(hasil).then(v => v.buffer())
-         await fs.writeFileSync('dadu.png', data)
-        res.sendFile(__path+'/dadu.png')
+         await fs.writeFileSync(__path +'/tmp/dadu.png', data)
+        res.sendFile(__path+'/tmp/dadu.png')
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+
+router.get('/asupan', async (req, res, next) => {
+  Apikey = req.query.apikey;
+  
+  if(!Apikey) return res.json(loghandler.notparam)
+  if(listkey.includes(Apikey)) {
+    const asupan = JSON.parse(fs.readFileSync(__path +'/data/asupan.json'));
+    const Asupan = asupan[Math.floor(Math.random() * asupan.length)];
+    let hasil = Asupan.asupan;
+    data = await fetch(hasil).then(v => v.buffer())
+    await fs.writeFileSync(__path +'/tmp/asupan.mp4', data)
+    res.sendFile(__path +'/tmp/asupan.mp4')
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+ 
+router.get("/maker/nulis", async (req, res, next) => {
+  
+  apikey = req.query.apikey;
+  text = req.query.text;
+  
+  if(!text) return res.json(loghandler.nottext)
+  if(!apikey) return res.json(loghandler.notparam)
+  
+  if(listkey.includes(apikey)) {
+    let hasil = 'https://api.zeks.xyz/api/nulis?text='+ text +'&apikey=apivinz' 
+    data = await fetch(hasil).then(v => v.buffer())
+    await fs.writeFileSync(__path +'/tmp/nulis.jpeg', data)
+    res.sendFile(__path +'/tmp/nulis.jpeg')
   } else {
     res.json(loghandler.invalidKey)
   }
 })
 
-router.get("/maker/nulis", async (req, res, next) => {
-  nama = req.query.nama;
-  kelas = req.query.kelas;
-  teks = req.query.kelas;
-  apikey = req.query.apikey;
-  
-  if(!req.query.apikey){
-    return res.json({status: 400, parameter: 'masukkan parameter apikey'})
-  }
-  if(req.query.apikey != 'Fxc7') {
-    return res.json(loghandler.invalidKey)
-  }
-  if (!req.query.nama) {
-    return res.status(400).json({
-      status: res.statusCode,
-      error: "parameter nama tidak boleh kosong",
-    })
-  }
-  if (!req.query.kelas) {
-    return res.status(400).json({
-      status: res.statusCode,
-      error: "parameter kelas tidak boleh kosong",
-    })
-  }
-  if (!req.query.teks) {
-    return res.status(400).json({
-      status: res.statusCode,
-      error: "parameter teks tidak boleh kosong",
-    })
-  }
-fetch(encodeURI(`https://shinoa-rest.herokuapp.com/tool/nulis?nama=${nama}&kelas=${kelas}&teks=${teks}`))
-.then((data) => {
-  res.json( 
-    data
-  )
-})
-.catch(err => {
-  res.json(loghandler.error)
-  })
-
-
-})
 router.get('/maker/ttp', async (req, res, next) => {
 
   Apikey = req.query.apikey;
@@ -1901,8 +2112,25 @@ router.get('/maker/ttp', async (req, res, next) => {
 data = await fetch(`https://api.areltiyan.site/sticker_maker?text=${encodeURIComponent(req.query.text)}`).then(v => v.json())
          base64 = data.base64
          var buffer = base64.slice(22)
-         await fs.writeFileSync(`ttp.png`, buffer, 'base64')
-        res.sendFile(__path+'/ttp.png')
+         await fs.writeFileSync(__path +`/tmp/ttp.png`, buffer, 'base64')
+        res.sendFile(__path+'/tmp/ttp.png')
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+
+router.get('/maker/harta-tahta', async(req, res, next) => {
+  const text = req.query.text;
+  const apikey = req.query.apikey;
+  
+  if(!text) return res.json(loghandler.nottext)
+  if(!apikey) return res.json(loghandler.notparam)
+  
+  if(listkey.includes(apikey)) {
+  let hasil = 'https://api.zeks.xyz/api/hartatahta?text='+ text +'&apikey=apivinz' 
+  data = await fetch(hasil).then(v => v.buffer())
+  await fs.writeFileSync(__path +'/tmp/tahta.jpg', data)
+  res.sendFile(__path +'/tmp/tahta.jpg')
   } else {
     res.json(loghandler.invalidKey)
   }
@@ -1916,12 +2144,42 @@ router.get('/maker/skatch', async(req, res, next) => {
   if(listkey.includes(apikey)){
   let hasil = `https://lindow-api.herokuapp.com/api/sketcheffect?img=${url}&apikey=LindowApi`
   data = await fetch(hasil).then(v => v.buffer())
-         await fs.writeFileSync('skatch.jpg', data)
-        res.sendFile(__path+'/skatch.jpg')
+         await fs.writeFileSync(__path +'/tmp/skatch.jpg', data)
+        res.sendFile(__path+'/tmp/skatch.jpg')
   } else {
     res.json(loghandler.invalidKey)
   }
-})
+});
+
+router.get('/maker/emoji2png', async(req, res, next) => {
+  const apikey = req.query.apikey;
+  const Emoji = req.query.text;
+  
+  if(!apikey) return jes.json(loghandler.notparam)
+  if(!Emoji) return res.json(loghandler.nottext)
+  
+  if(listkey.includes(apikey)) {
+
+    emoji.get(Emoji)
+    .then(img_emoji => {
+      const result = {
+        status: true,
+        code: 200,
+        creator: `${creator}`,
+        result: img_emoji.images[0].url
+      }
+      res.json(result)
+    })
+  
+    .catch((err) => {
+      res.json(loghandler.error)
+    })
+  } else {
+    res.json(loghandler.invalidKey)
+  }
+});
+
+
 router.get('/cekapikey', async(req, res, next) => {
   const apikey = req.query.apikey;
   if(!apikey) return res.json(loghandler.notparam)
@@ -1930,15 +2188,10 @@ router.get('/cekapikey', async(req, res, next) => {
       status: 'active',
       creator: `${creator}`,
       apikey: `${apikey}`,
-      message: 'awokwokwokwok free key gan sans ae:v'
+      message: 'apikey active'
     })
   } else {
-    res.json({
-      status: false,
-      creator: `${creator}`,
-      apikey: `${apikey}`,
-      message: 'invalid chat aja kalo pen apikey gan free kok:)'
-    })
+    res.json(loghandler.invalidKey)
   }
 })
 
