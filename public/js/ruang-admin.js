@@ -1,3 +1,25 @@
+arrBulan = ["Januari", "Februari", "Maret", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+var txt = "";
+txt += "<p><b>Browser</b>: " + navigator.appCodeName + "</p>";
+txt += "<p><b>Cookies</b>: " + navigator.cookieEnabled + "</p>";
+txt += "<p><b>Plataform</b>: " + navigator.platform + "</p>";
+txt += "<p><b>User Agent</b>: " + navigator.userAgent + "</p>";
+var d = new Date();
+const tgl = d.getDate();
+const bln = d.getMonth();
+const thn = d.getFullYear();
+const bulan = arrBulan[bln]
+
+document.getElementById("Statistic").innerHTML = txt
+document.getElementById("tgl").innerHTML = tgl
+document.getElementById("bln").innerHTML = bulan
+document.getElementById("thn").innerHTML = thn
+
+
+function cb(response) {
+    document.getElementById('visits').innerText = response.value;
+}
+
 var countDate = new Date('May 13 2021 00:00:00').getTime();
 
 function newYear(){
