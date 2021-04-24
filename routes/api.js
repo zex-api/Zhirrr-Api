@@ -8,7 +8,7 @@ var zahirr = db.get("zahirr");
 	console.log('')  
 }
  
-var creatorList = ['@only_fxc7'];
+var creatorList = ['@rizky'];
 var creator = creatorList[Math.floor(Math.random() * creatorList.length)]; 
 var secure = require('ssl-express-www');
 var cors = require('cors');
@@ -172,7 +172,7 @@ Akhir Pesan Error
 
 router.use(favicon(__path + "/views/favicon.ico"));
 
-const listkey = ["Fxc7", "manogay"];
+const listkey = ["rizkydev", "mangan"];
 
 router.post("/apikey", (req, res) => {
   const key = req.query.key;
